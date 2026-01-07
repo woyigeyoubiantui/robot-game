@@ -1,42 +1,93 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="zh">
 <head>
 <meta charset="UTF-8">
 <title>第三次机器人大战·命运轮回</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
 body {
-  background:#000;
+  background:black;
   color:#0f0;
   font-family: monospace;
   margin:0;
-  padding:10px;
+  padding:20px;
 }
+h1 { color:#0f0; }
 button {
-  width:100%;
-  padding:12px;
-  margin-top:10px;
-  font-size:16px;
+  background:#222;
+  color:#0f0;
+  border:1px solid #0f0;
+  padding:10px;
+  margin:5px;
 }
 #log {
-  white-space: pre-wrap;
-  margin-top:10px;
   border:1px solid #0f0;
   padding:10px;
   height:300px;
-  overflow:auto;
+  overflow-y:auto;
 }
 </style>
 </head>
+
 <body>
 
-<h2>第三次机器人大战·命运轮回</h2>
-<div>第一话：暗云</div>
+<h1>第三次机器人大战·命运轮回</h1>
+<p>第一话：暗云</p>
 
-<button onclick="nextTurn()">结束回合</button>
+<div>
+  <strong>我方 HP：</strong><span id="playerHP">100</span><br>
+  <strong>敌方 HP：</strong><span id="enemyHP">100</span>
+</div>
+
+<button onclick="attack()">攻击</button>
+<button onclick="defend()">防御</button>
+<button onclick="endTurn()">结束回合</button>
 
 <div id="log"></div>
 
-<script src="game.js"></script>
+<script>
+let playerHP = 100;
+let enemyHP = 100;
+let defending = false;
+
+function log(text){
+  const logDiv = document.getElementById("log");
+  logDiv.innerHTML += text + "<br>";
+  logDiv.scrollTop = logDiv.scrollHeight;
+}
+
+function attack(){
+  const dmg = Math.floor(Math.random()*20)+10;
+  enemyHP -= dmg;
+  if(enemyHP < 0) enemyHP = 0;
+  document.getElementById("enemyHP").innerText = enemyHP;
+  log("你发动攻击，造成 " + dmg + " 点伤害！");
+}
+
+function defend(){
+  defending = true;
+  log("你进入防御姿态！");
+}
+
+function endTurn(){
+  if(enemyHP <= 0){
+    log("敌机爆炸！战斗胜利！");
+    return;
+  }
+  let dmg = Math.floor(Math.random()*15)+5;
+  if(defending){
+    dmg = Math.floor(dmg/2);
+    defending = false;
+    log("防御成功，伤害减半！");
+  }
+  playerHP -= dmg;
+  if(playerHP < 0) playerHP = 0;
+  document.getElementById("playerHP").innerText = playerHP;
+  log("敌方反击，造成 " + dmg + " 点伤害！");
+  if(playerHP <= 0){
+    log("你的机体被击毁……GAME OVER");
+  }
+}
+</script>
+
 </body>
 </html>

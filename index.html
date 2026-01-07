@@ -1,92 +1,135 @@
 <!DOCTYPE html>
 <html lang="zh">
 <head>
-<meta charset="UTF-8">
-<title>第三次机器人大战·命运轮回</title>
-<style>
-body {
-  background:black;
-  color:#0f0;
-  font-family: monospace;
-  margin:0;
-  padding:20px;
-}
-h1 { color:#0f0; }
-button {
-  background:#222;
-  color:#0f0;
-  border:1px solid #0f0;
-  padding:10px;
-  margin:5px;
-}
-#log {
-  border:1px solid #0f0;
-  padding:10px;
-  height:300px;
-  overflow-y:auto;
-}
-</style>
+  <meta charset="UTF-8">
+  <title>第三次机器人大战：命运轮回</title>
+  <style>
+    body {
+      background: black;
+      color: #0f0;
+      font-family: monospace;
+      margin: 0;
+      padding: 20px;
+    }
+    h1 { color: #0f0; }
+    button {
+      background: #111;
+      color: #0f0;
+      border: 1px solid #0f0;
+      padding: 10px;
+      margin: 5px;
+    }
+    button:disabled {
+      color: #555;
+      border-color: #555;
+    }
+    #panel {
+      margin-top: 10px;
+    }
+    #log {
+      border: 1px solid #0f0;
+      padding: 10px;
+      margin-top: 10px;
+      height: 260px;
+      overflow-y: auto;
+      white-space: pre-line;
+    }
+  </style>
 </head>
-
 <body>
 
-<h1>第三次机器人大战·命运轮回</h1>
+<h1>第三次机器人大战：命运轮回</h1>
 <p>第一话：暗云</p>
 
-<div>
-  <strong>我方 HP：</strong><span id="playerHP">100</span><br>
-  <strong>敌方 HP：</strong><span id="enemyHP">100</span>
+<div id="panel">
+  <strong>我方 HP：</strong><span id="playerHP">120</span><br>
+  <strong>敌方 HP：</strong><span id="enemyHP">120</span>
 </div>
 
-<button onclick="attack()">攻击</button>
-<button onclick="defend()">防御</button>
-<button onclick="endTurn()">结束回合</button>
+<div>
+  <button onclick="attack()">攻击</button>
+  <button onclick="defend()">防御</button>
+  <button onclick="special()">必杀</button>
+  <button onclick="endTurn()">结束回合</button>
+</div>
 
 <div id="log"></div>
 
 <script>
-let playerHP = 100;
-let enemyHP = 100;
+let playerHP = 120;
+let enemyHP = 120;
 let defending = false;
+let playerTurn = true;
 
-function log(text){
-  const logDiv = document.getElementById("log");
-  logDiv.innerHTML += text + "<br>";
-  logDiv.scrollTop = logDiv.scrollHeight;
-}
+const log = msg => {
+  const el = document.getElementById("log");
+  el.textContent += msg + "\n";
+  el.scrollTop = el.scrollHeight;
+};
 
-function attack(){
-  const dmg = Math.floor(Math.random()*20)+10;
+const update = () => {
+  document.getElementById("playerHP").textContent = playerHP;
+  document.getElementById("enemyHP").textContent = enemyHP;
+};
+
+function attack() {
+  if (!playerTurn) return;
+  const dmg = Math.floor(Math.random() * 15) + 10;
   enemyHP -= dmg;
-  if(enemyHP < 0) enemyHP = 0;
-  document.getElementById("enemyHP").innerText = enemyHP;
-  log("你发动攻击，造成 " + dmg + " 点伤害！");
+  log(`你发动攻击，造成 ${dmg} 点伤害！`);
+  check();
 }
 
-function defend(){
+function defend() {
+  if (!playerTurn) return;
   defending = true;
-  log("你进入防御姿态！");
+  log("你进入防御姿态，受到的伤害将减少。");
 }
 
-function endTurn(){
-  if(enemyHP <= 0){
-    log("敌机爆炸！战斗胜利！");
-    return;
+function special() {
+  if (!playerTurn) return;
+  const dmg = Math.floor(Math.random() * 25) + 20;
+  enemyHP -= dmg;
+  log(`🔥 必杀技发动！敌方受到 ${dmg} 点巨大伤害！`);
+  check();
+}
+
+function endTurn() {
+  if (!playerTurn) return;
+  playerTurn = false;
+  log("—— 敌方回合 ——");
+  setTimeout(enemyTurn, 800);
+}
+
+function enemyTurn() {
+  const dmg = Math.floor(Math.random() * 18) + 8;
+  const final = defending ? Math.floor(dmg / 2) : dmg;
+  playerHP -= final;
+  log(`敌方攻击！你受到 ${final} 点伤害。`);
+  defending = false;
+  playerTurn = true;
+  log("—— 我方回合 ——");
+  check();
+}
+
+function check() {
+  update();
+  if (enemyHP <= 0) {
+    log("💥 敌机爆炸！战斗胜利！");
+    disable();
   }
-  let dmg = Math.floor(Math.random()*15)+5;
-  if(defending){
-    dmg = Math.floor(dmg/2);
-    defending = false;
-    log("防御成功，伤害减半！");
-  }
-  playerHP -= dmg;
-  if(playerHP < 0) playerHP = 0;
-  document.getElementById("playerHP").innerText = playerHP;
-  log("敌方反击，造成 " + dmg + " 点伤害！");
-  if(playerHP <= 0){
-    log("你的机体被击毁……GAME OVER");
+  if (playerHP <= 0) {
+    log("☠️ 你的机体被击毁……任务失败。");
+    disable();
   }
 }
+
+function disable() {
+  document.querySelectorAll("button").forEach(b => b.disabled = true);
+}
+
+log("—— 战斗开始 ——");
+update();
 </script>
 
 </body>

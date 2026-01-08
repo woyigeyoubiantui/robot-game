@@ -17,28 +17,29 @@
     }
 
     .status {
-      margin: 10px 0;
-      font-size: 18px;
+      margin-bottom: 10px;
     }
 
     button {
       background: #111;
       color: #0f0;
       border: 1px solid #0f0;
-      padding: 10px 14px;
-      margin: 5px 5px 5px 0;
-      font-size: 16px;
+      padding: 8px 16px;
+      margin-right: 10px;
+      cursor: pointer;
     }
 
     button:disabled {
       opacity: 0.4;
+      cursor: not-allowed;
     }
 
     #log {
-      margin-top: 20px;
-      padding: 10px;
       border: 1px solid #0f0;
-      min-height: 220px;
+      padding: 10px;
+      margin-top: 15px;
+      height: 260px;
+      overflow-y: auto;
       white-space: pre-line;
     }
   </style>
@@ -46,100 +47,156 @@
 
 <body>
 
-  <h1>第三次机器人大战：命运轮回</h1>
-  <h2>第一话：暗云</h2>
+<h1>第三次机器人大战：命运轮回</h1>
+<h2>第一话：暗云</h2>
 
-  <div class="status">我方 HP：<span id="playerHp">120</span></div>
-  <div class="status">敌方 HP：<span id="enemyHp">100</span></div>
+<div class="status">我方 HP：<span id="playerHP"></span></div>
+<div class="status">敌方 HP：<span id="enemyHP"></span></div>
 
-  <div>
-    <button onclick="attack()">攻击</button>
-    <button onclick="defend()">防御</button>
-    <button onclick="special()">必杀</button>
-    <button onclick="endTurn()">结束回合</button>
-  </div>
+<div>
+  <button id="attackBtn">攻击</button>
+  <button id="defendBtn">防御</button>
+  <button id="specialBtn">必杀</button>
+  <button id="restartBtn" disabled>重新开始</button>
+</div>
 
-  <div id="log">—— 战斗开始 ——</div>
+<div id="log"></div>
 
-  <script>
-    let playerHp = 120;
-    let enemyHp = 100;
-    let defending = false;
+<script>
+  // ====== 初始数值 ======
+  const MAX_PLAYER_HP = 100;
+  const MAX_ENEMY_HP = 80;
 
-    const log = document.getElementById("log");
-    const playerHpSpan = document.getElementById("playerHp");
-    const enemyHpSpan = document.getElementById("enemyHp");
+  let playerHP;
+  let enemyHP;
+  let battleOver = false;
 
-    function writeLog(text) {
-      log.textContent += "\n" + text;
-      log.scrollTop = log.scrollHeight;
+  // ====== DOM ======
+  const playerHPSpan = document.getElementById("playerHP");
+  const enemyHPSpan = document.getElementById("enemyHP");
+  const logDiv = document.getElementById("log");
+
+  const attackBtn = document.getElementById("attackBtn");
+  const defendBtn = document.getElementById("defendBtn");
+  const specialBtn = document.getElementById("specialBtn");
+  const restartBtn = document.getElementById("restartBtn");
+
+  // ====== 工具函数 ======
+  function rand(min, max) {
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+  }
+
+  function log(text) {
+    logDiv.textContent += text + "\n";
+    logDiv.scrollTop = logDiv.scrollHeight;
+  }
+
+  function updateHP() {
+    playerHPSpan.textContent = playerHP;
+    enemyHPSpan.textContent = enemyHP;
+  }
+
+  function clampHP() {
+    if (playerHP < 0) playerHP = 0;
+    if (enemyHP < 0) enemyHP = 0;
+  }
+
+  function endBattle(message) {
+    battleOver = true;
+    log("★ " + message);
+    attackBtn.disabled = true;
+    defendBtn.disabled = true;
+    specialBtn.disabled = true;
+    restartBtn.disabled = false;
+  }
+
+  // ====== 敌方回合 ======
+  function enemyTurn() {
+    if (battleOver) return;
+
+    const dmg = rand(8, 16);
+    playerHP -= dmg;
+    clampHP();
+    log(`敌方攻击！造成 ${dmg} 点伤害`);
+
+    if (playerHP <= 0) {
+      endBattle("我方机体被击毁……战斗失败");
     }
 
-    function updateHp() {
-      playerHpSpan.textContent = playerHp;
-      enemyHpSpan.textContent = enemyHp;
+    updateHP();
+  }
+
+  // ====== 玩家操作 ======
+  attackBtn.onclick = () => {
+    if (battleOver) return;
+
+    const dmg = rand(12, 20);
+    enemyHP -= dmg;
+    clampHP();
+    log(`我方攻击！造成 ${dmg} 点伤害`);
+
+    if (enemyHP <= 0) {
+      endBattle("敌机爆炸！战斗胜利！");
+    } else {
+      enemyTurn();
     }
 
-    function checkEnd() {
-      if (enemyHp <= 0) {
-        writeLog("💥 敌机爆炸！战斗胜利！");
-        disableAll();
-        return true;
-      }
-      if (playerHp <= 0) {
-        writeLog("☠️ 我方机体被击毁……");
-        disableAll();
-        return true;
-      }
-      return false;
+    updateHP();
+  };
+
+  defendBtn.onclick = () => {
+    if (battleOver) return;
+
+    const dmg = rand(4, 8);
+    playerHP -= dmg;
+    clampHP();
+    log(`我方防御姿态，仍受到 ${dmg} 点伤害`);
+
+    if (playerHP <= 0) {
+      endBattle("我方机体被击毁……战斗失败");
     }
 
-    function disableAll() {
-      document.querySelectorAll("button").forEach(b => b.disabled = true);
+    updateHP();
+  };
+
+  specialBtn.onclick = () => {
+    if (battleOver) return;
+
+    const dmg = rand(25, 35);
+    enemyHP -= dmg;
+    clampHP();
+    log(`◆ 必杀技发动！造成 ${dmg} 点致命伤害！`);
+
+    if (enemyHP <= 0) {
+      endBattle("敌机被彻底摧毁！战斗胜利！");
+    } else {
+      enemyTurn();
     }
 
-    function enemyAction() {
-      if (checkEnd()) return;
+    updateHP();
+  };
 
-      let damage = Math.floor(Math.random() * 15) + 5;
-      if (defending) {
-        damage = Math.floor(damage / 2);
-        defending = false;
-      }
+  restartBtn.onclick = startGame;
 
-      playerHp -= damage;
-      writeLog("敌方反击，造成 " + damage + " 点伤害！");
-      updateHp();
-      checkEnd();
-    }
+  // ====== 开始 / 重置 ======
+  function startGame() {
+    playerHP = MAX_PLAYER_HP;
+    enemyHP = MAX_ENEMY_HP;
+    battleOver = false;
 
-    function attack() {
-      let damage = Math.floor(Math.random() * 15) + 10;
-      enemyHp -= damage;
-      writeLog("你发动攻击，造成 " + damage + " 点伤害！");
-      updateHp();
-      setTimeout(enemyAction, 500);
-    }
+    logDiv.textContent = "";
+    log("战斗开始！");
 
-    function defend() {
-      defending = true;
-      writeLog("你进入防御姿态！");
-      setTimeout(enemyAction, 500);
-    }
+    attackBtn.disabled = false;
+    defendBtn.disabled = false;
+    specialBtn.disabled = false;
+    restartBtn.disabled = true;
 
-    function special() {
-      let damage = Math.floor(Math.random() * 20) + 25;
-      enemyHp -= damage;
-      writeLog("🔥 必杀技发动！造成 " + damage + " 点巨大伤害！");
-      updateHp();
-      setTimeout(enemyAction, 500);
-    }
+    updateHP();
+  }
 
-    function endTurn() {
-      writeLog("你选择结束回合。");
-      setTimeout(enemyAction, 500);
-    }
-  </script>
+  startGame();
+</script>
 
 </body>
 </html>

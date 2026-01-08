@@ -3,134 +3,143 @@
 <head>
   <meta charset="UTF-8">
   <title>第三次机器人大战：命运轮回</title>
+
   <style>
     body {
       background: black;
       color: #0f0;
       font-family: monospace;
-      margin: 0;
       padding: 20px;
     }
-    h1 { color: #0f0; }
+
+    h1, h2 {
+      color: #0f0;
+    }
+
+    .status {
+      margin: 10px 0;
+      font-size: 18px;
+    }
+
     button {
       background: #111;
       color: #0f0;
       border: 1px solid #0f0;
-      padding: 10px;
-      margin: 5px;
+      padding: 10px 14px;
+      margin: 5px 5px 5px 0;
+      font-size: 16px;
     }
+
     button:disabled {
-      color: #555;
-      border-color: #555;
+      opacity: 0.4;
     }
-    #panel {
-      margin-top: 10px;
-    }
+
     #log {
-      border: 1px solid #0f0;
+      margin-top: 20px;
       padding: 10px;
-      margin-top: 10px;
-      height: 260px;
-      overflow-y: auto;
+      border: 1px solid #0f0;
+      min-height: 220px;
       white-space: pre-line;
     }
   </style>
 </head>
+
 <body>
 
-<h1>第三次机器人大战：命运轮回</h1>
-<p>第一话：暗云</p>
+  <h1>第三次机器人大战：命运轮回</h1>
+  <h2>第一话：暗云</h2>
 
-<div id="panel">
-  <strong>我方 HP：</strong><span id="playerHP">120</span><br>
-  <strong>敌方 HP：</strong><span id="enemyHP">120</span>
-</div>
+  <div class="status">我方 HP：<span id="playerHp">120</span></div>
+  <div class="status">敌方 HP：<span id="enemyHp">100</span></div>
 
-<div>
-  <button onclick="attack()">攻击</button>
-  <button onclick="defend()">防御</button>
-  <button onclick="special()">必杀</button>
-  <button onclick="endTurn()">结束回合</button>
-</div>
+  <div>
+    <button onclick="attack()">攻击</button>
+    <button onclick="defend()">防御</button>
+    <button onclick="special()">必杀</button>
+    <button onclick="endTurn()">结束回合</button>
+  </div>
 
-<div id="log"></div>
+  <div id="log">—— 战斗开始 ——</div>
 
-<script>
-let playerHP = 120;
-let enemyHP = 120;
-let defending = false;
-let playerTurn = true;
+  <script>
+    let playerHp = 120;
+    let enemyHp = 100;
+    let defending = false;
 
-const log = msg => {
-  const el = document.getElementById("log");
-  el.textContent += msg + "\n";
-  el.scrollTop = el.scrollHeight;
-};
+    const log = document.getElementById("log");
+    const playerHpSpan = document.getElementById("playerHp");
+    const enemyHpSpan = document.getElementById("enemyHp");
 
-const update = () => {
-  document.getElementById("playerHP").textContent = playerHP;
-  document.getElementById("enemyHP").textContent = enemyHP;
-};
+    function writeLog(text) {
+      log.textContent += "\n" + text;
+      log.scrollTop = log.scrollHeight;
+    }
 
-function attack() {
-  if (!playerTurn) return;
-  const dmg = Math.floor(Math.random() * 15) + 10;
-  enemyHP -= dmg;
-  log(`你发动攻击，造成 ${dmg} 点伤害！`);
-  check();
-}
+    function updateHp() {
+      playerHpSpan.textContent = playerHp;
+      enemyHpSpan.textContent = enemyHp;
+    }
 
-function defend() {
-  if (!playerTurn) return;
-  defending = true;
-  log("你进入防御姿态，受到的伤害将减少。");
-}
+    function checkEnd() {
+      if (enemyHp <= 0) {
+        writeLog("💥 敌机爆炸！战斗胜利！");
+        disableAll();
+        return true;
+      }
+      if (playerHp <= 0) {
+        writeLog("☠️ 我方机体被击毁……");
+        disableAll();
+        return true;
+      }
+      return false;
+    }
 
-function special() {
-  if (!playerTurn) return;
-  const dmg = Math.floor(Math.random() * 25) + 20;
-  enemyHP -= dmg;
-  log(`🔥 必杀技发动！敌方受到 ${dmg} 点巨大伤害！`);
-  check();
-}
+    function disableAll() {
+      document.querySelectorAll("button").forEach(b => b.disabled = true);
+    }
 
-function endTurn() {
-  if (!playerTurn) return;
-  playerTurn = false;
-  log("—— 敌方回合 ——");
-  setTimeout(enemyTurn, 800);
-}
+    function enemyAction() {
+      if (checkEnd()) return;
 
-function enemyTurn() {
-  const dmg = Math.floor(Math.random() * 18) + 8;
-  const final = defending ? Math.floor(dmg / 2) : dmg;
-  playerHP -= final;
-  log(`敌方攻击！你受到 ${final} 点伤害。`);
-  defending = false;
-  playerTurn = true;
-  log("—— 我方回合 ——");
-  check();
-}
+      let damage = Math.floor(Math.random() * 15) + 5;
+      if (defending) {
+        damage = Math.floor(damage / 2);
+        defending = false;
+      }
 
-function check() {
-  update();
-  if (enemyHP <= 0) {
-    log("💥 敌机爆炸！战斗胜利！");
-    disable();
-  }
-  if (playerHP <= 0) {
-    log("☠️ 你的机体被击毁……任务失败。");
-    disable();
-  }
-}
+      playerHp -= damage;
+      writeLog("敌方反击，造成 " + damage + " 点伤害！");
+      updateHp();
+      checkEnd();
+    }
 
-function disable() {
-  document.querySelectorAll("button").forEach(b => b.disabled = true);
-}
+    function attack() {
+      let damage = Math.floor(Math.random() * 15) + 10;
+      enemyHp -= damage;
+      writeLog("你发动攻击，造成 " + damage + " 点伤害！");
+      updateHp();
+      setTimeout(enemyAction, 500);
+    }
 
-log("—— 战斗开始 ——");
-update();
-</script>
+    function defend() {
+      defending = true;
+      writeLog("你进入防御姿态！");
+      setTimeout(enemyAction, 500);
+    }
+
+    function special() {
+      let damage = Math.floor(Math.random() * 20) + 25;
+      enemyHp -= damage;
+      writeLog("🔥 必杀技发动！造成 " + damage + " 点巨大伤害！");
+      updateHp();
+      setTimeout(enemyAction, 500);
+    }
+
+    function endTurn() {
+      writeLog("你选择结束回合。");
+      setTimeout(enemyAction, 500);
+    }
+  </script>
 
 </body>
 </html>
